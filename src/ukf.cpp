@@ -184,7 +184,7 @@ void UKF::PredictMeanAndCovariance(VectorXd &x, MatrixXd &P,
   //predict state mean
   x.fill(0.0);
   for (int i = 0; i < n_aug_size_; i++) {  //iterate over sigma points
-    x = x + weights_(i) * pred_sigma_pts.col(i);
+    x += weights_(i) * pred_sigma_pts.col(i);
   }
 
   //predicted state covariance matrix
@@ -197,7 +197,7 @@ void UKF::PredictMeanAndCovariance(VectorXd &x, MatrixXd &P,
     while (x_diff(yaw_pos)> M_PI) x_diff(yaw_pos) -= 2.*M_PI;
     while (x_diff(yaw_pos)<-M_PI) x_diff(yaw_pos) += 2.*M_PI;
 
-    P = P + weights_(i) * x_diff * x_diff.transpose() ;
+    P += weights_(i) * x_diff * x_diff.transpose();
   }
 }
 
@@ -237,9 +237,7 @@ void UKF::Prediction(double delta_t) {
   
   // Predict the sigma point values for this the time step
   UKF::SigmaPointPrediction(sigma_pts_, predicted_sigma_pts_, delta_t);
-  
-  std::cout << "predicted_sigma_pts_" << std::endl;
-  
+  // Calculate the mean and covariance of the predicted sigma points
   UKF::PredictMeanAndCovariance(x_, P_, predicted_sigma_pts_, 3);
 }
 
@@ -255,38 +253,15 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   MatrixXd Zsig = MatrixXd(n_z, n_aug_size_);
   
   //transform sigma points into measurement space
-  for (int i = 0; i < n_aug_size_; i++) {  //2n+1 simga points
-
-    // extract values for better readibility
-    double p_x = predicted_sigma_pts_(0,i);
-    double p_y = predicted_sigma_pts_(1,i);
-    
-    // measurement model
-    Zsig(0,i) = p_x;                        //r
-    Zsig(1,i) = p_y;                                 //phi
-    
-  }
+  Zsig.row(0) = predicted_sigma_pts_.row(0);
+  Zsig.row(1) = predicted_sigma_pts_.row(1);
 
   //mean predicted measurement
   VectorXd z_pred = VectorXd(n_z);
-  z_pred.fill(0.0);
-  for (int i=0; i < n_aug_size_; i++) {
-      z_pred = z_pred + weights_(i) * Zsig.col(i);
-  }
-
   //measurement covariance matrix S
   MatrixXd S = MatrixXd(n_z,n_z);
-  S.fill(0.0);
-  for (int i = 0; i < n_aug_size_; i++) {  //2n+1 simga points
-    //residual
-    VectorXd z_diff = Zsig.col(i) - z_pred;
-
-    //angle normalization
-    while (z_diff(1)> M_PI) z_diff(1)-=2.*M_PI;
-    while (z_diff(1)<-M_PI) z_diff(1)+=2.*M_PI;
-
-    S = S + weights_(i) * z_diff * z_diff.transpose();
-  }
+  // Calculate the mean and covariance of the predicted sigma points
+  UKF::PredictMeanAndCovariance(z_pred, S, Zsig, 1);
 
   //add measurement noise covariance matrix
   MatrixXd R = MatrixXd(n_z,n_z);
