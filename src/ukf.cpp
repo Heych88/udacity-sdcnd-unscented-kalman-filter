@@ -241,14 +241,42 @@ void UKF::Prediction(double delta_t) {
   UKF::PredictMeanAndCovariance(x_, P_, predicted_sigma_pts_, 3);
 }
 
+void UKF::UpdateState(VectorXd &x, MatrixXd &P, MatrixXd &pred_sigma_pts, 
+    MatrixXd &S, MatrixXd &Zsig, VectorXd &z_pred, const int &n_z, 
+    MeasurementPackage &meas_package) {
+  
+  //create matrix for cross correlation Tc
+  MatrixXd Tc = MatrixXd(n_x_, n_z);
+  //calculate cross correlation matrix
+  Tc.fill(0.0);
+  for (int i = 0; i < n_aug_size_; i++) {  //2n+1 simga points
+
+    //residual
+    VectorXd z_diff = Zsig.col(i) - z_pred;
+    // state difference
+    VectorXd x_diff = pred_sigma_pts.col(i) - x;
+
+    Tc = Tc + weights_(i) * x_diff * z_diff.transpose();
+  }
+
+  //Kalman gain K;
+  MatrixXd K = Tc * S.inverse();
+
+  //residual
+  VectorXd z_diff = meas_package.raw_measurements_ - z_pred;
+
+  //update state mean and covariance matrix
+  x = x + K * z_diff;
+  P = P - K*S*K.transpose();
+}
+
 /**
  * Updates the state and the state covariance matrix using a laser measurement.
  * @param {MeasurementPackage} meas_package
  */
 void UKF::UpdateLidar(MeasurementPackage meas_package) {
-  std::cout << "UKF::UpdateLidar Start" << std::endl;
   
-  int n_z = 2;
+  const int n_z = 2;
   //create matrix for sigma points in measurement space
   MatrixXd Zsig = MatrixXd(n_z, n_aug_size_);
   
@@ -269,29 +297,8 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
           0, std_laspy_*std_laspy_;
   S = S + R;
   
-  //create matrix for cross correlation Tc
-  MatrixXd Tc = MatrixXd(n_x_, n_z);
-  //calculate cross correlation matrix
-  Tc.fill(0.0);
-  for (int i = 0; i < n_aug_size_; i++) {  //2n+1 simga points
-
-    //residual
-    VectorXd z_diff = Zsig.col(i) - z_pred;
-    // state difference
-    VectorXd x_diff = predicted_sigma_pts_.col(i) - x_;
-
-    Tc = Tc + weights_(i) * x_diff * z_diff.transpose();
-  }
-
-  //Kalman gain K;
-  MatrixXd K = Tc * S.inverse();
-
-  //residual
-  VectorXd z_diff = meas_package.raw_measurements_ - z_pred;
-
-  //update state mean and covariance matrix
-  x_ = x_ + K * z_diff;
-  P_ = P_ - K*S*K.transpose();  
+  UKF::UpdateState(x_, P_, predicted_sigma_pts_, S, Zsig, z_pred, n_z, 
+      meas_package);   
 }
 
 /**

@@ -111,6 +111,10 @@ public:
   
   void PredictMeanAndCovariance(VectorXd &x, MatrixXd &P, 
         MatrixXd &pred_sigma_pts, const int yaw_pos);
+  
+  void UpdateState(VectorXd &x, MatrixXd &P, MatrixXd &pred_sigma_pts, 
+    MatrixXd &S, MatrixXd &Zsig, VectorXd &z_pred, const int &n_z,
+    MeasurementPackage &meas_package);
 };
 
 #endif /* UKF_H */
