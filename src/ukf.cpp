@@ -129,48 +129,21 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   std::cout << "P_ = " << P_ << std::endl;
 }
 
-/**
- * Predicts sigma points, the state, and the state covariance matrix.
- * @param {double} delta_t the change in time (in seconds) between the last
- * measurement and this one.
- */
-void UKF::Prediction(double delta_t) {
-  // update the state augmentation vector
-  VectorXd x_aug_ = VectorXd(n_aug_);
-  x_aug_.head(5) = x_;
-  x_aug_(5) = 0;
-  x_aug_(6) = 0;
+void UKF::SigmaPointPrediction(MatrixXd &sigma_pts, MatrixXd &pred_sigma_pts,
+    double delta_t) {
   
-  // Calculate the augmentation matrix
-  MatrixXd P_aug_ = MatrixXd(n_aug_, n_aug_);
-  P_aug_.fill(0.0);
-  P_aug_.topLeftCorner(5,5) = P_;
-  P_aug_(5,5) = std_a_*std_a_;
-  P_aug_(6,6) = std_yawdd_*std_yawdd_;
-  
-  MatrixXd sigma_pts_ = MatrixXd(n_aug_, n_aug_size_);
-  sigma_pts_.col(0) = x_aug_;
-  
-  //create square root matrix
-  MatrixXd L = P_aug_.llt().matrixL();
-  for (int i = 0; i< n_aug_; i++)
-  {
-    sigma_pts_.col(i+1)       = x_aug_ + sqrt(lambda_ + n_aug_) * L.col(i);
-    sigma_pts_.col(i+1+n_aug_) = x_aug_ - sqrt(lambda_ + n_aug_) * L.col(i);
-  }
-  
-  predicted_sigma_pts_.fill(0.0);
+  pred_sigma_pts.fill(0.0);
   //predict sigma points
   for (int i = 0; i< n_aug_size_; i++)
   {
     //extract values for better readability
-    double p_x = sigma_pts_(0,i);
-    double p_y = sigma_pts_(1,i);
-    double v = sigma_pts_(2,i);
-    double yaw = sigma_pts_(3,i);
-    double yawd = sigma_pts_(4,i);
-    double nu_a = sigma_pts_(5,i);
-    double nu_yawdd = sigma_pts_(6,i);
+    double p_x = sigma_pts(0,i);
+    double p_y = sigma_pts(1,i);
+    double v = sigma_pts(2,i);
+    double yaw = sigma_pts(3,i);
+    double yawd = sigma_pts(4,i);
+    double nu_a = sigma_pts(5,i);
+    double nu_yawdd = sigma_pts(6,i);
 
     //predicted state values
     double px_p, py_p;
@@ -198,15 +171,52 @@ void UKF::Prediction(double delta_t) {
     yawd_p = yawd_p + nu_yawdd*delta_t;
 
     //write predicted sigma point into right column
-    predicted_sigma_pts_(0,i) = px_p;
-    predicted_sigma_pts_(1,i) = py_p;
-    predicted_sigma_pts_(2,i) = v_p;
-    predicted_sigma_pts_(3,i) = yaw_p;
-    predicted_sigma_pts_(4,i) = yawd_p;
+    pred_sigma_pts(0,i) = px_p;
+    pred_sigma_pts(1,i) = py_p;
+    pred_sigma_pts(2,i) = v_p;
+    pred_sigma_pts(3,i) = yaw_p;
+    pred_sigma_pts(4,i) = yawd_p;
+  }
+}
+
+/**
+ * Predicts sigma points, the state, and the state covariance matrix.
+ * @param {double} delta_t the change in time (in seconds) between the last
+ * measurement and this one.
+ */
+void UKF::Prediction(double delta_t) {
+  // update the state augmentation vector
+  VectorXd x_aug_ = VectorXd(n_aug_);
+  x_aug_.head(5) = x_;
+  x_aug_(5) = 0;
+  x_aug_(6) = 0;
+  
+  // Calculate the augmentation matrix
+  MatrixXd P_aug_ = MatrixXd(n_aug_, n_aug_);
+  P_aug_.fill(0.0);
+  P_aug_.topLeftCorner(5,5) = P_;
+  P_aug_(5,5) = std_a_*std_a_;
+  P_aug_(6,6) = std_yawdd_*std_yawdd_;
+  
+  MatrixXd sigma_pts_ = MatrixXd(n_aug_, n_aug_size_);
+  sigma_pts_.col(0) = x_aug_;
+  
+  //create square root matrix
+  MatrixXd sqrt_P_ = P_aug_.llt().matrixL();
+  
+  // Generate sigma points
+  for (int i = 0; i< n_aug_; i++)
+  {
+    // columns 1 -> n_aug_ = x + sqrt((lambda + n_aug_) * P_) 
+    sigma_pts_.col(i+1) = x_aug_ + sqrt(lambda_ + n_aug_) * sqrt_P_.col(i);
+    // columns n_aug_+1 -> 2*n_aug_+1 = x - sqrt((lambda + n_aug_) * P_)
+    sigma_pts_.col(i+1+n_aug_) = x_aug_ - sqrt(lambda_ + n_aug_) * sqrt_P_.col(i);
   }
   
+  // Predict the sigma point values for this the time step
+  UKF::SigmaPointPrediction(sigma_pts_, predicted_sigma_pts_, delta_t);
+  
   std::cout << "predicted_sigma_pts_" << std::endl;
-  std::cout << lambda_ + n_aug_ << std::endl;
   
   //predict state mean
   x_.fill(0.0);
