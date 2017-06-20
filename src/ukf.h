@@ -108,6 +108,9 @@ public:
   
   void SigmaPointPrediction(MatrixXd &sigma_pts, MatrixXd &pred_sigma_pts, 
         double delta_t);
+  
+  void PredictMeanAndCovariance(VectorXd &x, MatrixXd &P, 
+        MatrixXd &pred_sigma_pts, const int yaw_pos);
 };
 
 #endif /* UKF_H */

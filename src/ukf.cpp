@@ -179,6 +179,28 @@ void UKF::SigmaPointPrediction(MatrixXd &sigma_pts, MatrixXd &pred_sigma_pts,
   }
 }
 
+void UKF::PredictMeanAndCovariance(VectorXd &x, MatrixXd &P, 
+    MatrixXd &pred_sigma_pts, const int yaw_pos) {
+  //predict state mean
+  x.fill(0.0);
+  for (int i = 0; i < n_aug_size_; i++) {  //iterate over sigma points
+    x = x + weights_(i) * pred_sigma_pts.col(i);
+  }
+
+  //predicted state covariance matrix
+  P.fill(0.0);
+  for (int i = 0; i < n_aug_size_; i++) {  //iterate over sigma points
+
+    // state difference
+    VectorXd x_diff = pred_sigma_pts.col(i) - x;
+    //angle normalization
+    while (x_diff(yaw_pos)> M_PI) x_diff(yaw_pos) -= 2.*M_PI;
+    while (x_diff(yaw_pos)<-M_PI) x_diff(yaw_pos) += 2.*M_PI;
+
+    P = P + weights_(i) * x_diff * x_diff.transpose() ;
+  }
+}
+
 /**
  * Predicts sigma points, the state, and the state covariance matrix.
  * @param {double} delta_t the change in time (in seconds) between the last
@@ -218,24 +240,7 @@ void UKF::Prediction(double delta_t) {
   
   std::cout << "predicted_sigma_pts_" << std::endl;
   
-  //predict state mean
-  x_.fill(0.0);
-  for (int i = 0; i < n_aug_size_; i++) {  //iterate over sigma points
-    x_ = x_ + weights_(i) * predicted_sigma_pts_.col(i);
-  }
-
-  //predicted state covariance matrix
-  P_.fill(0.0);
-  for (int i = 0; i < n_aug_size_; i++) {  //iterate over sigma points
-
-    // state difference
-    VectorXd x_diff = predicted_sigma_pts_.col(i) - x_;
-    //angle normalization
-    while (x_diff(3)> M_PI) x_diff(3)-=2.*M_PI;
-    while (x_diff(3)<-M_PI) x_diff(3)+=2.*M_PI;
-
-    P_ = P_ + weights_(i) * x_diff * x_diff.transpose() ;
-  }
+  UKF::PredictMeanAndCovariance(x_, P_, predicted_sigma_pts_, 3);
 }
 
 /**
