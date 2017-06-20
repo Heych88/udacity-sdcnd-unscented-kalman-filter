@@ -31,7 +31,7 @@ int main()
   uWS::Hub h;
 
   // Create a Kalman Filter instance
-  UKF ukf;
+  UKF ukf(5, 7);
 
   // used to compute the RMSE later
   Tools tools;

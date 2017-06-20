@@ -60,7 +60,10 @@ public:
   /**
    * Constructor
    */
-  UKF();
+  UKF(int n_x, int n_aug, bool use_laser=true, bool use_radar=true, 
+    double std_a=2, double std_yawdd=2, double std_laspx=0.15, 
+    double std_laspy=0.15, double std_radr=0.3, double std_radphi=0.03, 
+    double std_radrd=0.3);
 
   /**
    * Destructor

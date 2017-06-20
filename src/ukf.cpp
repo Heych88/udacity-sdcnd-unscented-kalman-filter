@@ -10,33 +10,35 @@ using std::vector;
 /**
  * Initializes Unscented Kalman filter
  */
-UKF::UKF() {
+UKF::UKF(int n_x, int n_aug, bool use_laser, bool use_radar, double std_a, 
+        double std_yawdd, double std_laspx, double std_laspy, 
+        double std_radr, double std_radphi, double std_radrd) {
   // if this is false, laser measurements will be ignored (except during init)
-  use_laser_ = true;
+  use_laser_ = use_laser;
   // if this is false, radar measurements will be ignored (except during init)
-  use_radar_ = true;
+  use_radar_ = use_radar;
   
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 2;
+  std_a_ = std_a;
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 2;
+  std_yawdd_ = std_yawdd;
   // Laser measurement noise standard deviation position1 in m
-  std_laspx_ = 0.15;
+  std_laspx_ = std_laspx;
   // Laser measurement noise standard deviation position2 in m
-  std_laspy_ = 0.15;
+  std_laspy_ = std_laspy;
   // Radar measurement noise standard deviation radius in m
-  std_radr_ = 0.3;
+  std_radr_ = std_radr;
   // Radar measurement noise standard deviation angle in rad
-  std_radphi_ = 0.03;
+  std_radphi_ = std_radphi;
   // Radar measurement noise standard deviation radius change in m/s
-  std_radrd_ = 0.3;
+  std_radrd_ = std_radrd;
 
   is_initialized_ = false;
   
   // State dimension
-  n_x_ = 5;
+  n_x_ = n_x;
   // Augmented state dimension
-  n_aug_ = 7;
+  n_aug_ = n_aug;
   n_aug_size_ = 2 * n_aug_ + 1;
   // Sigma point spreading parameter
   lambda_ = 3 - n_aug_;
