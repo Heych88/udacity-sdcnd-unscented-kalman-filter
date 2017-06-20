@@ -137,45 +137,30 @@ void UKF::SigmaPointPrediction(MatrixXd &sigma_pts, MatrixXd &pred_sigma_pts,
   for (int i = 0; i< n_aug_size_; i++)
   {
     //extract values for better readability
-    double p_x = sigma_pts(0,i);
-    double p_y = sigma_pts(1,i);
-    double v = sigma_pts(2,i);
+    double pos_x = sigma_pts(0,i);
+    double pos_y = sigma_pts(1,i);
+    double vel = sigma_pts(2,i);
     double yaw = sigma_pts(3,i);
-    double yawd = sigma_pts(4,i);
-    double nu_a = sigma_pts(5,i);
-    double nu_yawdd = sigma_pts(6,i);
+    double yaw_dot = sigma_pts(4,i);
+    double a_pos = sigma_pts(5,i);
+    double a_yaw_dot = sigma_pts(6,i);
 
-    //predicted state values
-    double px_p, py_p;
-
-    //avoid division by zero
-    if (fabs(yawd) > 0.001) {
-        px_p = p_x + v/yawd * ( sin (yaw + yawd*delta_t) - sin(yaw));
-        py_p = p_y + v/yawd * ( cos(yaw) - cos(yaw+yawd*delta_t) );
+    // check for divide by zero
+    if (fabs(yaw_dot) > 0.001) {
+        pos_x += vel/yaw_dot * ( sin (yaw + yaw_dot * delta_t) - sin(yaw));
+        pos_y += vel/yaw_dot * ( cos(yaw) - cos(yaw + yaw_dot * delta_t) );
+    } else {
+        pos_x += vel * delta_t * cos(yaw);
+        pos_y += vel * delta_t * sin(yaw);
     }
-    else {
-        px_p = p_x + v*delta_t*cos(yaw);
-        py_p = p_y + v*delta_t*sin(yaw);
-    }
-
-    double v_p = v;
-    double yaw_p = yaw + yawd*delta_t;
-    double yawd_p = yawd;
-
-    //add noise
-    px_p = px_p + 0.5*nu_a*delta_t*delta_t * cos(yaw);
-    py_p = py_p + 0.5*nu_a*delta_t*delta_t * sin(yaw);
-    v_p = v_p + nu_a*delta_t;
-
-    yaw_p = yaw_p + 0.5*nu_yawdd*delta_t*delta_t;
-    yawd_p = yawd_p + nu_yawdd*delta_t;
 
     //write predicted sigma point into right column
-    pred_sigma_pts(0,i) = px_p;
-    pred_sigma_pts(1,i) = py_p;
-    pred_sigma_pts(2,i) = v_p;
-    pred_sigma_pts(3,i) = yaw_p;
-    pred_sigma_pts(4,i) = yawd_p;
+    pred_sigma_pts(0,i) = pos_x + 0.5 * a_pos * delta_t * delta_t * cos(yaw);
+    pred_sigma_pts(1,i) = pos_y + 0.5 * a_pos * delta_t * delta_t * sin(yaw);
+    pred_sigma_pts(2,i) = vel + a_pos * delta_t;
+    pred_sigma_pts(3,i) = yaw + yaw_dot * delta_t + 0.5 * a_yaw_dot * 
+        delta_t * delta_t;
+    pred_sigma_pts(4,i) = yaw_dot + a_yaw_dot * delta_t;
   }
 }
 
