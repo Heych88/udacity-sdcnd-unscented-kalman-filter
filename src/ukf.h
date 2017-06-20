@@ -22,15 +22,10 @@ public:
 
   ///* state vector: [pos1 pos2 vel_abs yaw_angle yaw_rate] in SI units and rad
   VectorXd x_;
-  //VectorXd x_aug_;
   ///* state covariance matrix
   MatrixXd P_;
-  //MatrixXd P_aug_;
-  ///* predicted sigma points matrix
-  //MatrixXd sigma_pts_;
   //create matrix with predicted sigma points as columns
   MatrixXd predicted_sigma_pts_;
-  //MatrixXd Q_;
 
   ///* time when the state is true, in us
   long long previous_timestamp_;
@@ -61,15 +56,6 @@ public:
   int n_aug_size_;
   ///* Sigma point spreading parameter
   double lambda_;
-  
-  // measurement parameters for the radar sensor
-  int n_lidar_;
-  ///* radar measurement noise
-  //MatrixXd R_lidar_;
-
-  // measurement parameters for the radar sensor
-  int n_radar_;
-
 
   /**
    * Constructor
