@@ -29,7 +29,7 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
     difference = difference.array() * difference.array();
     rmse = rmse + difference;
   }
-  std::cout << "done" << std::endl;
+  
   rmse = rmse / size;
   rmse = rmse.array().sqrt();
   std::cout << rmse << std::endl;
