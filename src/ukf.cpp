@@ -306,18 +306,17 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
    ****************************************************************************/
   for (int i = 0; i < n_aug_size_; i++) {  
     // extract values for better readibility
-    double p_x = predicted_sigma_pts_(0,i);
-    double p_y = predicted_sigma_pts_(1,i);
-    double v  = predicted_sigma_pts_(2,i);
+    double px = predicted_sigma_pts_(0,i);
+    double py = predicted_sigma_pts_(1,i);
+    double vel  = predicted_sigma_pts_(2,i);
     double yaw = predicted_sigma_pts_(3,i);
 
-    double v1 = cos(yaw)*v;
-    double v2 = sin(yaw)*v;
-
     // measurement model
-    Zsig(0,i) = sqrt(p_x*p_x + p_y*p_y); //ramge
-    Zsig(1,i) = atan2(p_y,p_x); //angle
-    Zsig(2,i) = (p_x*v1 + p_y*v2 ) / sqrt(p_x*p_x + p_y*p_y); //velocity
+    // range = sqrt(px^2 + py^2)
+    Zsig(0,i) = sqrt(fabs(px*px + py*py));
+    Zsig(1,i) = atan2(py,px); //angle
+    // velocity = (px*cos(ψ)v+py*sin(ψ)v)/sqrt(px^2 + py^2)
+    Zsig(2,i) = (px*cos(yaw)*vel + py*sin(yaw)*vel) / Zsig(0,i);
   }
   
   //mean predicted measurement
