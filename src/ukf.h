@@ -10,11 +10,9 @@
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-class UKF {
+class UKF {  
 public:
 
-  ///* initially set to false, set to true in first call of ProcessMeasurement
-  bool is_initialized_;
   ///* if this is false, laser measurements will be ignored (except for init)
   bool use_laser_;
   ///* if this is false, radar measurements will be ignored (except for init)
@@ -24,11 +22,6 @@ public:
   VectorXd x_;
   ///* state covariance matrix
   MatrixXd P_;
-  //create matrix with predicted sigma points as columns
-  MatrixXd predicted_sigma_pts_;
-
-  ///* time when the state is true, in us
-  long long previous_timestamp_;
 
   ///* Process noise standard deviation longitudinal acceleration in m/s^2
   double std_a_;
@@ -45,22 +38,10 @@ public:
   ///* Radar measurement noise standard deviation radius change in m/s
   double std_radrd_ ;
 
-  ///* Weights of sigma points
-  VectorXd weights_;
-
   ///* State dimension
   int n_x_;
   ///* Augmented state dimension
   int n_aug_;
-  ///* sigma points size of the augmented matrix
-  int n_aug_size_;
-  ///* Sigma point spreading parameter
-  double lambda_;
-  
-  ///* number of updates performed
-  long update_count_;
-  ///* number of NIS values above the NIS threshold
-  long nis_thresh_count_;
 
   /**
  * Unscented Kalman filter Constructor
@@ -92,6 +73,28 @@ public:
    */
   void ProcessMeasurement(MeasurementPackage meas_package);
 
+private:
+  ///* initially set to false, set to true in first call of ProcessMeasurement
+  bool is_initialized_;
+  
+  //create matrix with predicted sigma points as columns
+  MatrixXd predicted_sigma_pts_;  
+  ///* Weights of sigma points
+  VectorXd weights_;
+  
+  ///* time when the state is true, in us
+  long long previous_timestamp_;
+
+  ///* sigma points size of the augmented matrix
+  int n_aug_size_;
+  ///* Sigma point spreading parameter
+  double lambda_;
+  
+  ///* number of updates performed
+  long update_count_;
+  ///* number of NIS values above the NIS threshold
+  long nis_thresh_count_;
+  
   /**
    * Prediction Predicts sigma points, the state, and the state covariance
    * matrix
