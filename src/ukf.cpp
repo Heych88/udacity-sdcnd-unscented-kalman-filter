@@ -23,11 +23,13 @@ using std::vector;
  */
 UKF::UKF(int n_x, int n_aug, bool use_laser, bool use_radar, double std_a, 
         double std_yawdd, double std_laspx, double std_laspy, 
-        double std_radr, double std_radphi, double std_radrd) {
+        double std_radr, double std_radphi, double std_radrd, bool use_nis) {
   // if this is false, laser measurements will be ignored (except during init)
   use_laser_ = use_laser;
   // if this is false, radar measurements will be ignored (except during init)
   use_radar_ = use_radar;
+  // if false NIS will not be calculated.
+  use_nis_ = use_nis;
   
   // Process noise standard deviation longitudinal acceleration in m/s^2
   std_a_ = std_a;
@@ -275,8 +277,10 @@ void UKF::UpdateState(VectorXd &x, MatrixXd &P, MatrixXd &pred_sigma_pts,
   //residual
   VectorXd z_diff = meas_package.raw_measurements_ - z_pred;
   
-  // check the error using Normalised Innovation Squared
-  UKF::NISState(S, z_diff, n_z);
+  if(use_nis_) {
+    // check the error using Normalised Innovation Squared
+    UKF::NISState(S, z_diff, n_z);
+  }
 
   //update state mean and covariance matrix
   x += K * z_diff;

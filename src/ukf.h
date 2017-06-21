@@ -17,6 +17,8 @@ public:
   bool use_laser_;
   ///* if this is false, radar measurements will be ignored (except for init)
   bool use_radar_;
+  ///* if false NIS will not be calculated.
+  bool use_nis_;
 
   ///* state vector: [pos1 pos2 vel_abs yaw_angle yaw_rate] in SI units and rad
   VectorXd x_;
@@ -60,7 +62,7 @@ public:
   UKF(int n_x, int n_aug, bool use_laser=true, bool use_radar=true, 
     double std_a=2.1, double std_yawdd=2.1, double std_laspx=0.15, 
     double std_laspy=0.15, double std_radr=0.3, double std_radphi=0.03, 
-    double std_radrd=0.3);
+    double std_radrd=0.3, bool use_nis=false);
 
   /**
    * Destructor
