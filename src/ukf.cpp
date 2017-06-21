@@ -30,9 +30,9 @@ UKF::UKF(int n_x, int n_aug, bool use_laser, bool use_radar, bool use_nis) {
   use_nis_ = use_nis;
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 2.0;
+  std_a_ = 3.0;
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 1.4;
+  std_yawdd_ = 1.6;
   // Laser measurement noise standard deviation position1 in m
   std_laspx_ = 0.15;
   // Laser measurement noise standard deviation position2 in m
@@ -93,6 +93,16 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
       //Initialize state.  
       x_.head(2) = meas_package.raw_measurements_;
+    } else if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
+      //Initialize state. 
+      
+      float range = meas_package.raw_measurements_(0);
+      float theta = meas_package.raw_measurements_(1);
+      float vel = meas_package.raw_measurements_(2);
+      
+      x_(0) = range * cos(theta);
+      x_(1) = range * sin(theta);
+      x_(2) = vel;
     }
 
     // done initializing, no need to predict or update
