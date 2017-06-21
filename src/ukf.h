@@ -13,18 +13,54 @@ using Eigen::VectorXd;
 class UKF {  
 public:
 
+  ///* state vector: [pos1 pos2 vel_abs yaw_angle yaw_rate] in SI units and rad
+  VectorXd x_;
+  ///* state covariance matrix
+  MatrixXd P_;
+
+  /**
+ * Unscented Kalman filter Constructor
+ * @param {n_x} - number of state parameters
+ * @param {n_aug} - number of state + noise parameters for the augmented state
+ * @param {use_laser} - Use lidar data in the calculation
+ * @param {use_radar} - Use radar data in the calculation
+ * @param {std_a} - process noise due to change in acceleration
+ * @param {std_yawdd} - process noise due to change in measured angle
+ * @param {std_laspx} - lidar measurement noise in the x plane
+ * @param {std_laspy} - lidar measurement noise in the y plane
+ * @param {std_radr} - radar noise in the distance measurement
+ * @param {std_radphi} - radar noise in the angle measurement
+ * @param {std_radrd} - radar noise in the angle acceleration measurement
+ */
+  UKF(int n_x, int n_aug, bool use_laser=true, bool use_radar=true, 
+    bool use_nis=false);
+
+  /**
+   * Destructor
+   */
+  virtual ~UKF();
+
+  /**
+   * ProcessMeasurement
+   * @param meas_package The latest measurement data of either radar or laser
+   */
+  void ProcessMeasurement(MeasurementPackage meas_package);
+
+private:
+  ///* initially set to false, set to true in first call of ProcessMeasurement
+  bool is_initialized_;
   ///* if this is false, laser measurements will be ignored (except for init)
   bool use_laser_;
   ///* if this is false, radar measurements will be ignored (except for init)
   bool use_radar_;
   ///* if false NIS will not be calculated.
   bool use_nis_;
-
-  ///* state vector: [pos1 pos2 vel_abs yaw_angle yaw_rate] in SI units and rad
-  VectorXd x_;
-  ///* state covariance matrix
-  MatrixXd P_;
-
+  
+  //create matrix with predicted sigma points as columns
+  MatrixXd predicted_sigma_pts_;  
+  ///* Weights of sigma points
+  VectorXd weights_;
+  
   ///* Process noise standard deviation longitudinal acceleration in m/s^2
   double std_a_;
   ///* Process noise standard deviation yaw acceleration in rad/s^2
@@ -44,45 +80,6 @@ public:
   int n_x_;
   ///* Augmented state dimension
   int n_aug_;
-
-  /**
- * Unscented Kalman filter Constructor
- * @param {n_x} - number of state parameters
- * @param {n_aug} - number of state + noise parameters for the augmented state
- * @param {use_laser} - Use lidar data in the calculation
- * @param {use_radar} - Use radar data in the calculation
- * @param {std_a} - process noise due to change in acceleration
- * @param {std_yawdd} - process noise due to change in measured angle
- * @param {std_laspx} - lidar measurement noise in the x plane
- * @param {std_laspy} - lidar measurement noise in the y plane
- * @param {std_radr} - radar noise in the distance measurement
- * @param {std_radphi} - radar noise in the angle measurement
- * @param {std_radrd} - radar noise in the angle acceleration measurement
- */
-  UKF(int n_x, int n_aug, bool use_laser=true, bool use_radar=true, 
-    double std_a=2.1, double std_yawdd=2.1, double std_laspx=0.15, 
-    double std_laspy=0.15, double std_radr=0.3, double std_radphi=0.03, 
-    double std_radrd=0.3, bool use_nis=false);
-
-  /**
-   * Destructor
-   */
-  virtual ~UKF();
-
-  /**
-   * ProcessMeasurement
-   * @param meas_package The latest measurement data of either radar or laser
-   */
-  void ProcessMeasurement(MeasurementPackage meas_package);
-
-private:
-  ///* initially set to false, set to true in first call of ProcessMeasurement
-  bool is_initialized_;
-  
-  //create matrix with predicted sigma points as columns
-  MatrixXd predicted_sigma_pts_;  
-  ///* Weights of sigma points
-  VectorXd weights_;
   
   ///* time when the state is true, in us
   long long previous_timestamp_;

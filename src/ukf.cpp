@@ -21,30 +21,28 @@ using std::vector;
  * @param {std_radphi} - radar noise in the angle measurement
  * @param {std_radrd} - radar noise in the angle acceleration measurement
  */
-UKF::UKF(int n_x, int n_aug, bool use_laser, bool use_radar, double std_a, 
-        double std_yawdd, double std_laspx, double std_laspy, 
-        double std_radr, double std_radphi, double std_radrd, bool use_nis) {
+UKF::UKF(int n_x, int n_aug, bool use_laser, bool use_radar, bool use_nis) {
   // if this is false, laser measurements will be ignored (except during init)
   use_laser_ = use_laser;
   // if this is false, radar measurements will be ignored (except during init)
   use_radar_ = use_radar;
   // if false NIS will not be calculated.
   use_nis_ = use_nis;
-  
+
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = std_a;
+  std_a_ = 2.0;
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = std_yawdd;
+  std_yawdd_ = 1.4;
   // Laser measurement noise standard deviation position1 in m
-  std_laspx_ = std_laspx;
+  std_laspx_ = 0.15;
   // Laser measurement noise standard deviation position2 in m
-  std_laspy_ = std_laspy;
+  std_laspy_ = 0.15;
   // Radar measurement noise standard deviation radius in m
-  std_radr_ = std_radr;
+  std_radr_ = 0.3;
   // Radar measurement noise standard deviation angle in rad
-  std_radphi_ = std_radphi;
+  std_radphi_ = 0.03;
   // Radar measurement noise standard deviation radius change in m/s
-  std_radrd_ = std_radrd;
+  std_radrd_ = 0.3;
 
   is_initialized_ = false;
   
@@ -398,7 +396,7 @@ void UKF::NISState(MatrixXd &S, VectorXd &z_diff, const int &n_z) {
     }
   }
   
-  std::cout << "Chi Suared 0.05 percentatage = ";
+  std::cout << "Chi Squared 0.05 error = ";
   std::cout << (float(nis_thresh_count_) / float(update_count_)) * 100.0 << "%";
   std::cout << std::endl;  
 }
