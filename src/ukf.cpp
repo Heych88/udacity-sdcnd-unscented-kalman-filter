@@ -9,6 +9,17 @@ using std::vector;
 
 /**
  * Initializes Unscented Kalman filter
+ * @param {n_x} - number of state parameters
+ * @param {n_aug} - number of state + noise parameters for the augmented state
+ * @param {use_laser} - Use lidar data in the calculation
+ * @param {use_radar} - Use radar data in the calculation
+ * @param {std_a} - process noise due to change in acceleration
+ * @param {std_yawdd} - process noise due to change in measured angle
+ * @param {std_laspx} - lidar measurement noise in the x plane
+ * @param {std_laspy} - lidar measurement noise in the y plane
+ * @param {std_radr} - radar noise in the distance measurement
+ * @param {std_radphi} - radar noise in the angle measurement
+ * @param {std_radrd} - radar noise in the angle acceleration measurement
  */
 UKF::UKF(int n_x, int n_aug, bool use_laser, bool use_radar, double std_a, 
         double std_yawdd, double std_laspx, double std_laspy, 
@@ -39,6 +50,7 @@ UKF::UKF(int n_x, int n_aug, bool use_laser, bool use_radar, double std_a,
   n_x_ = n_x;
   // Augmented state dimension
   n_aug_ = n_aug;
+  // Number of sigma points
   n_aug_size_ = 2 * n_aug_ + 1;
   // Sigma point spreading parameter
   lambda_ = 3 - n_aug_;
@@ -46,16 +58,17 @@ UKF::UKF(int n_x, int n_aug, bool use_laser, bool use_radar, double std_a,
   // initial state vector
   x_ = VectorXd(n_x_);
   x_.fill(0.1); // initalise slightly of the origin
-
   // initial covariance matrix
   P_ = MatrixXd(n_x_, n_x_);
-  //create matrix with predicted sigma points as columns
+  // create matrix with predicted sigma points as columns
   predicted_sigma_pts_ = MatrixXd(n_x_, n_aug_size_); 
 }
 
 UKF::~UKF() {}
 
 /**
+ * Updates the Uncented Kalman Filter with the measured data.
+ * Call this function to update the objects position.
  * @param {MeasurementPackage} meas_package The latest measurement data of
  * either radar or laser.
  */
@@ -75,8 +88,9 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     
     if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
       //Initialize state.  
-      x_(0) = meas_package.raw_measurements_[0];
-      x_(1) = meas_package.raw_measurements_[1];
+      x_.head(2) = meas_package.raw_measurements_;
+      //x_(0) = meas_package.raw_measurements_[0];
+      //x_(1) = meas_package.raw_measurements_[1];
     }
 
     // done initializing, no need to predict or update
@@ -84,6 +98,9 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     return;
   }
   
+  /*****************************************************************************
+   *  Prediction
+   ****************************************************************************/
   // dt - expressed in seconds
   double dt = (meas_package.timestamp_ - previous_timestamp_) / 1000000.0; 
   previous_timestamp_ = meas_package.timestamp_;
@@ -185,7 +202,9 @@ void UKF::Prediction(double delta_t) {
   //create square root matrix
   MatrixXd sqrt_P = P_aug.llt().matrixL();
   
-  // Generate sigma points
+  /*****************************************************************************
+   *  Generate sigma points
+   ****************************************************************************/
   for (int i = 0; i< n_aug_; i++)
   {
     // columns 1 -> n_aug_ = x + sqrt((lambda + n_aug_) * P_) 
@@ -194,9 +213,14 @@ void UKF::Prediction(double delta_t) {
     sigma_pts.col(i+1+n_aug_) = x_aug - sqrt(lambda_ + n_aug_) * sqrt_P.col(i);
   }
   
-  // Predict the sigma point values for this the time step
+  /*****************************************************************************
+   *  Predict the sigma point values for this the time step
+   ****************************************************************************/
   UKF::SigmaPointPrediction(sigma_pts, predicted_sigma_pts_, delta_t);
-  // Calculate the mean and covariance of the predicted sigma points
+  
+  /*****************************************************************************
+   *  Calculate the mean and covariance of the predicted sigma points
+   ****************************************************************************/
   UKF::PredictMeanAndCovariance(x_, P_, predicted_sigma_pts_, 3);
 }
 
@@ -237,8 +261,10 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   const int n_z = 2; // number of sensor output parameters (px, py)
   //create matrix for sigma points in measurement space
   MatrixXd Zsig = MatrixXd(n_z, n_aug_size_);
-  
-  //transform sigma points into measurement space
+
+  /*****************************************************************************
+   *  convert predicted sigma points into measurement space
+   ****************************************************************************/
   Zsig.row(0) = predicted_sigma_pts_.row(0);
   Zsig.row(1) = predicted_sigma_pts_.row(1);
 
@@ -246,7 +272,10 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   VectorXd z_pred = VectorXd(n_z);
   //measurement covariance matrix S
   MatrixXd S = MatrixXd(n_z,n_z);
-  // Calculate the mean and covariance of the predicted sigma points
+  
+  /*****************************************************************************
+   *  Calculate the mean and covariance
+   ****************************************************************************/
   UKF::PredictMeanAndCovariance(z_pred, S, Zsig, -1);
 
   //add measurement noise covariance matrix
@@ -255,6 +284,9 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
           0, std_laspy_*std_laspy_;
   S = S + R;
   
+  /*****************************************************************************
+   *  Update the unscented kalman filter
+   ****************************************************************************/
   UKF::UpdateState(x_, P_, predicted_sigma_pts_, S, Zsig, z_pred, n_z, 
       meas_package);   
 }
@@ -269,9 +301,10 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   //create matrix for sigma points in measurement space
   MatrixXd Zsig = MatrixXd(n_z, n_aug_size_);
   
-  //transform sigma points into measurement space
+  /*****************************************************************************
+   *  transform predicted sigma points into measurement space
+   ****************************************************************************/
   for (int i = 0; i < n_aug_size_; i++) {  
-
     // extract values for better readibility
     double p_x = predicted_sigma_pts_(0,i);
     double p_y = predicted_sigma_pts_(1,i);
@@ -291,7 +324,9 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   VectorXd z_pred = VectorXd(n_z);
   //measurement covariance matrix S
   MatrixXd S = MatrixXd(n_z,n_z);
-  // Calculate the mean and covariance of the predicted sigma points
+  /*****************************************************************************
+   *  Calculate the mean and covariance
+   ****************************************************************************/
   UKF::PredictMeanAndCovariance(z_pred, S, Zsig, 1);
 
   //add measurement noise covariance matrix
@@ -301,6 +336,9 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
           0, 0,std_radrd_*std_radrd_;
   S = S + R;
   
+  /*****************************************************************************
+   *  Update the unscented kalman filter
+   ****************************************************************************/
   UKF::UpdateState(x_, P_, predicted_sigma_pts_, S, Zsig, z_pred, n_z, 
       meas_package);
 }
