@@ -31,7 +31,9 @@ int main()
   uWS::Hub h;
 
   // Create a Kalman Filter instance
-  UKF ukf(5, 7);
+  // 5 => Number of tracked parameters in the system mean
+  // 7 => system mean size + process noise size for the augmented matrix
+  UKF ukf(5, 7); 
 
   // used to compute the RMSE later
   Tools tools;

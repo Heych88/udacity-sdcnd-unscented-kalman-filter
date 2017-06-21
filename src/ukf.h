@@ -58,8 +58,19 @@ public:
   double lambda_;
 
   /**
-   * Constructor
-   */
+ * Unscented Kalman filter Constructor
+ * @param {n_x} - number of state parameters
+ * @param {n_aug} - number of state + noise parameters for the augmented state
+ * @param {use_laser} - Use lidar data in the calculation
+ * @param {use_radar} - Use radar data in the calculation
+ * @param {std_a} - process noise due to change in acceleration
+ * @param {std_yawdd} - process noise due to change in measured angle
+ * @param {std_laspx} - lidar measurement noise in the x plane
+ * @param {std_laspy} - lidar measurement noise in the y plane
+ * @param {std_radr} - radar noise in the distance measurement
+ * @param {std_radphi} - radar noise in the angle measurement
+ * @param {std_radrd} - radar noise in the angle acceleration measurement
+ */
   UKF(int n_x, int n_aug, bool use_laser=true, bool use_radar=true, 
     double std_a=2, double std_yawdd=2, double std_laspx=0.15, 
     double std_laspy=0.15, double std_radr=0.3, double std_radphi=0.03, 
@@ -95,12 +106,37 @@ public:
    */
   void UpdateRadar(MeasurementPackage meas_package);
   
+  /**
+   * Predicts the previous sigma points at the current time step.
+   * @param {sigma_pts} - matrix containing the previous sigma points
+   * @param {pred_sigma_pts} - matrix containing the predicted sigma points 
+   * @param {delta_t} - change in time between UKF updates 
+   */
   void SigmaPointPrediction(MatrixXd &sigma_pts, MatrixXd &pred_sigma_pts, 
         double delta_t);
   
+  /**
+   * Predicts the mean and covariance from the provided sigma points matrix.
+   * @param {x} - the output vector with the predicted mean values
+   * @param {P} - the output Matrix with the predicted covariance values
+   * @param {pred_sigma_pts} - the matrix containing the sigma points 
+   * @param {yaw_pos} - the vector position of the stored yaw value. -1 if yaw 
+   *                    not present in the sigma points. 
+   */
   void PredictMeanAndCovariance(VectorXd &x, MatrixXd &P, 
         MatrixXd &pred_sigma_pts, const int yaw_pos);
   
+  /**
+   * Updates the mean and covariance with a proprtion of the predicted and 
+   * senor measured position.
+   * @param {x} - output vector with the predicted mean values
+   * @param {P} - output Matrix with the predicted covariance values
+   * @param {S} - measurement covariance matrix 
+   * @param {Zsig} - Matrix with the sensor predicted sigma points
+   * @param {z_pred} - Vector with the current predicted mean values
+   * @param {n_z} - Number of measured sensor parameters, lidar = 2, Radar = 3. 
+   * @param {meas_package} - Measurement sensor class
+   */
   void UpdateState(VectorXd &x, MatrixXd &P, MatrixXd &pred_sigma_pts, 
     MatrixXd &S, MatrixXd &Zsig, VectorXd &z_pred, const int &n_z,
     MeasurementPackage &meas_package);

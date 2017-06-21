@@ -89,8 +89,6 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
       //Initialize state.  
       x_.head(2) = meas_package.raw_measurements_;
-      //x_(0) = meas_package.raw_measurements_[0];
-      //x_(1) = meas_package.raw_measurements_[1];
     }
 
     // done initializing, no need to predict or update
@@ -120,6 +118,12 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   }
 }
 
+/**
+ * Predicts the previous sigma points at the current time step.
+ * @param {sigma_pts} - matrix containing the previous sigma points
+ * @param {pred_sigma_pts} - matrix containing the predicted sigma points 
+ * @param {delta_t} - change in time between UKF updates 
+ */
 void UKF::SigmaPointPrediction(MatrixXd &sigma_pts, MatrixXd &pred_sigma_pts,
     double delta_t) {
   
@@ -133,8 +137,8 @@ void UKF::SigmaPointPrediction(MatrixXd &sigma_pts, MatrixXd &pred_sigma_pts,
     double vel = sigma_pts(2,i);
     double yaw = sigma_pts(3,i);
     double yaw_dot = sigma_pts(4,i);
-    double a_pos = sigma_pts(5,i);
-    double a_yaw_dot = sigma_pts(6,i);
+    double a_pos = sigma_pts(5,i); // acceleration process noise
+    double a_yaw_dot = sigma_pts(6,i); // change in angle process noise
 
     // check for divide by zero
     if (fabs(yaw_dot) > 0.001) {
@@ -155,6 +159,14 @@ void UKF::SigmaPointPrediction(MatrixXd &sigma_pts, MatrixXd &pred_sigma_pts,
   }
 }
 
+/**
+ * Predicts the mean and covariance from the provided sigma points matrix.
+ * @param {x} - the output vector with the predicted mean values
+ * @param {P} - the output Matrix with the predicted covariance values
+ * @param {pred_sigma_pts} - the matrix containing the sigma points 
+ * @param {yaw_pos} - the vector position of the stored yaw value. -1 if yaw 
+ *                    not present in the sigma points. 
+ */
 void UKF::PredictMeanAndCovariance(VectorXd &x, MatrixXd &P, 
     MatrixXd &pred_sigma_pts, const int yaw_pos=-1) {
   //predict state mean
@@ -224,9 +236,21 @@ void UKF::Prediction(double delta_t) {
   UKF::PredictMeanAndCovariance(x_, P_, predicted_sigma_pts_, 3);
 }
 
+/**
+ * Updates the mean and covariance with a proprtion of the predicted and 
+ * senor measured position.
+ * @param {x} - output vector with the predicted mean values
+ * @param {P} - output Matrix with the predicted covariance values
+ * @param {S} - measurement covariance matrix 
+ * @param {Zsig} - Matrix with the sensor predicted sigma points
+ * @param {z_pred} - Vector with the current predicted mean values
+ * @param {n_z} - Number of measured sensor parameters, lidar = 2, Radar = 3. 
+ * @param {meas_package} - Measurement sensor class
+ */
 void UKF::UpdateState(VectorXd &x, MatrixXd &P, MatrixXd &pred_sigma_pts, 
     MatrixXd &S, MatrixXd &Zsig, VectorXd &z_pred, const int &n_z, 
     MeasurementPackage &meas_package) {
+  // TODO: Check for NaN and inf in the calculations.
   
   //create matrix for cross correlation Tc
   MatrixXd Tc = MatrixXd(n_x_, n_z);
@@ -258,7 +282,7 @@ void UKF::UpdateState(VectorXd &x, MatrixXd &P, MatrixXd &pred_sigma_pts,
  */
 void UKF::UpdateLidar(MeasurementPackage meas_package) {
   
-  const int n_z = 2; // number of sensor output parameters (px, py)
+  const int n_z = 2; // number of sensor output parameters (pos_x, pos_y)
   //create matrix for sigma points in measurement space
   MatrixXd Zsig = MatrixXd(n_z, n_aug_size_);
 
@@ -306,17 +330,17 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
    ****************************************************************************/
   for (int i = 0; i < n_aug_size_; i++) {  
     // extract values for better readibility
-    double px = predicted_sigma_pts_(0,i);
-    double py = predicted_sigma_pts_(1,i);
+    double pos_x = predicted_sigma_pts_(0,i);
+    double pos_y = predicted_sigma_pts_(1,i);
     double vel  = predicted_sigma_pts_(2,i);
     double yaw = predicted_sigma_pts_(3,i);
 
     // measurement model
     // range = sqrt(px^2 + py^2)
-    Zsig(0,i) = sqrt(fabs(px*px + py*py));
-    Zsig(1,i) = atan2(py,px); //angle
+    Zsig(0,i) = sqrt(fabs(pos_x*pos_x + pos_y*pos_y));
+    Zsig(1,i) = atan2(pos_y,pos_x); //angle
     // velocity = (px*cos(ψ)v+py*sin(ψ)v)/sqrt(px^2 + py^2)
-    Zsig(2,i) = (px*cos(yaw)*vel + py*sin(yaw)*vel) / Zsig(0,i);
+    Zsig(2,i) = (pos_x*cos(yaw)*vel + pos_y*sin(yaw)*vel) / Zsig(0,i);
   }
   
   //mean predicted measurement
