@@ -8,7 +8,16 @@ using std::vector;
 Tools::Tools() {}
 
 Tools::~Tools() {}
-
+/*
+ * Calculates the Root Mean Square Error of between the the estimated position
+ * and the true position.
+ * RMSE = sqrt(1/(vector size) * sum(square(estimate-truth)))
+ * @param estimations : predicted position
+ * @param ground_truth : actual measured position
+ * @return : the error between the estimate and ground_truth 
+ * below is copied from the Extended Kalman filter project found
+ * https://github.com/Heych88/udacity-sdcnd-extended-kalman-filter/blob/master/src/tools.cpp
+ */
 VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
                               const vector<VectorXd> &ground_truth) {
   VectorXd rmse(4);

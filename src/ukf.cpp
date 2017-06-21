@@ -86,7 +86,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     // set the sigma points weights
     weights_ = VectorXd(n_aug_size_);
     weights_(0) = (lambda_)/(lambda_ + n_aug_);
-    for (int i=1; i< n_aug_size_; i++) {  //2n+1 weights
+    for (int i=1; i< n_aug_size_; i++) { 
       weights_(i) = 0.5/(n_aug_ + lambda_);
     }
     
@@ -137,6 +137,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
  * @param {sigma_pts} - matrix containing the previous sigma points
  * @param {pred_sigma_pts} - matrix containing the predicted sigma points 
  * @param {delta_t} - change in time between UKF updates 
+ * below is modified from the Unscented Kalman filter assignments 14, 15
  */
 void UKF::SigmaPointPrediction(MatrixXd &sigma_pts, MatrixXd &pred_sigma_pts,
     double delta_t) {
@@ -180,6 +181,7 @@ void UKF::SigmaPointPrediction(MatrixXd &sigma_pts, MatrixXd &pred_sigma_pts,
  * @param {pred_sigma_pts} - the matrix containing the sigma points 
  * @param {yaw_pos} - the vector position of the stored yaw value. -1 if yaw 
  *                    not present in the sigma points. 
+ * below is modified from the Unscented Kalman filter assignments 23, 24 
  */
 void UKF::PredictMeanAndCovariance(VectorXd &x, MatrixXd &P, 
     MatrixXd &pred_sigma_pts, const int yaw_pos=-1) {
@@ -209,6 +211,7 @@ void UKF::PredictMeanAndCovariance(VectorXd &x, MatrixXd &P,
  * Predicts sigma points, the state, and the state covariance matrix.
  * @param {double} delta_t the change in time (in seconds) between the last
  * measurement and this one.
+ * below is modified from the Unscented Kalman filter sections 13 through 24 
  */
 void UKF::Prediction(double delta_t) {
   // update the state augmentation vector
@@ -218,7 +221,7 @@ void UKF::Prediction(double delta_t) {
   // Calculate the augmentation matrix
   MatrixXd P_aug = MatrixXd(n_aug_, n_aug_);
   P_aug.fill(0.0);
-  P_aug.topLeftCorner(5,5) = P_;
+  P_aug.topLeftCorner(n_x_, n_x_) = P_;
   P_aug(5,5) = std_a_ * std_a_;
   P_aug(6,6) = std_yawdd_ * std_yawdd_;
   
@@ -260,6 +263,7 @@ void UKF::Prediction(double delta_t) {
  * @param {z_pred} - Vector with the current predicted mean values
  * @param {n_z} - Number of measured sensor parameters, lidar = 2, Radar = 3. 
  * @param {meas_package} - Measurement sensor class
+ * below is modified from the Unscented Kalman filter assignments 26, 27, 29, 30 
  */
 void UKF::UpdateState(VectorXd &x, MatrixXd &P, MatrixXd &pred_sigma_pts, 
     MatrixXd &S, MatrixXd &Zsig, VectorXd &z_pred, const int &n_z, 
@@ -337,6 +341,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 /**
  * Updates the state and the state covariance matrix using a radar measurement.
  * @param {MeasurementPackage} meas_package
+ * below is modified from the Unscented Kalman filter assignments 26, 27, 29, 30
  */
 void UKF::UpdateRadar(MeasurementPackage meas_package) {
   
