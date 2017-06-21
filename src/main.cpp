@@ -33,7 +33,7 @@ int main()
   // Create a Kalman Filter instance
   // 5 => Number of tracked parameters in the system mean
   // 7 => system mean size + process noise size for the augmented matrix
-  UKF ukf(5, 7); 
+  UKF ukf(5, 7, true, true, true); 
 
   // used to compute the RMSE later
   Tools tools;
