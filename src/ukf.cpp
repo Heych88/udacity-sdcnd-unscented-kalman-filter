@@ -62,6 +62,12 @@ UKF::UKF(int n_x, int n_aug, bool use_laser, bool use_radar, double std_a,
   P_ = MatrixXd(n_x_, n_x_);
   // create matrix with predicted sigma points as columns
   predicted_sigma_pts_ = MatrixXd(n_x_, n_aug_size_); 
+  
+  // list of errors for Normalised Innovation Squared
+  //nis_array_ = VectorXd(400);
+  
+  update_count_ = 0;
+  nis_thresh_count_ = 0;
 }
 
 UKF::~UKF() {}
@@ -270,6 +276,9 @@ void UKF::UpdateState(VectorXd &x, MatrixXd &P, MatrixXd &pred_sigma_pts,
   MatrixXd K = Tc * S.inverse();
   //residual
   VectorXd z_diff = meas_package.raw_measurements_ - z_pred;
+  
+  // check the error using Normalised Innovation Squared
+  UKF::NISState(S, z_diff, n_z);
 
   //update state mean and covariance matrix
   x += K * z_diff;
@@ -364,4 +373,31 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
    ****************************************************************************/
   UKF::UpdateState(x_, P_, predicted_sigma_pts_, S, Zsig, z_pred, n_z, 
       meas_package);
+}
+
+/**
+ * Normalised Innovation Squared for checking noise parameter values,
+ * @param {S} - measurement covariance matrix 
+ * @param {z_diff} - difference between predicted and measured values
+ */
+void UKF::NISState(MatrixXd &S, VectorXd &z_diff, const int &n_z) {
+  
+  update_count_ += 1;
+  
+  if(n_z == 2) {
+    if(z_diff.transpose() * S.inverse() * z_diff > 5.991) {
+      nis_thresh_count_ += 1;
+    }
+  } else if(n_z == 3) {
+    if(z_diff.transpose() * S.inverse() * z_diff > 7.815) {
+      nis_thresh_count_ += 1;
+    }
+  }
+  
+  std::cout << "Chi Suared 0.05 percentatage = ";
+  std::cout << (float(nis_thresh_count_) / float(update_count_)) * 100.0 << "%";
+  std::cout << std::endl;
+  
+  //nis_array_.push_back(z_diff.transpose() * S.inverse() * z_diff);
+  
 }
