@@ -56,6 +56,11 @@ public:
   int n_aug_size_;
   ///* Sigma point spreading parameter
   double lambda_;
+  
+  ///* number of updates performed
+  long update_count_;
+  ///* number of NIS values above the NIS threshold
+  long nis_thresh_count_;
 
   /**
  * Unscented Kalman filter Constructor
@@ -72,7 +77,7 @@ public:
  * @param {std_radrd} - radar noise in the angle acceleration measurement
  */
   UKF(int n_x, int n_aug, bool use_laser=true, bool use_radar=true, 
-    double std_a=2, double std_yawdd=2, double std_laspx=0.15, 
+    double std_a=2.1, double std_yawdd=2.1, double std_laspx=0.15, 
     double std_laspy=0.15, double std_radr=0.3, double std_radphi=0.03, 
     double std_radrd=0.3);
 
@@ -140,6 +145,14 @@ public:
   void UpdateState(VectorXd &x, MatrixXd &P, MatrixXd &pred_sigma_pts, 
     MatrixXd &S, MatrixXd &Zsig, VectorXd &z_pred, const int &n_z,
     MeasurementPackage &meas_package);
+  
+  /**
+   * Normalised Innovation Squared for checking noise parameter values,
+   * @param {S} - measurement covariance matrix 
+   * @param {z_diff} - difference between predicted and measured values
+   * @param {n_z} - Number of measured sensor parameters, lidar = 2, Radar = 3.
+   */
+  void NISState(MatrixXd &S, VectorXd &z_diff, const int &n_z);
 };
 
 #endif /* UKF_H */

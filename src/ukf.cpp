@@ -63,9 +63,7 @@ UKF::UKF(int n_x, int n_aug, bool use_laser, bool use_radar, double std_a,
   // create matrix with predicted sigma points as columns
   predicted_sigma_pts_ = MatrixXd(n_x_, n_aug_size_); 
   
-  // list of errors for Normalised Innovation Squared
-  //nis_array_ = VectorXd(400);
-  
+  // init count forNormalised Innovation Squared
   update_count_ = 0;
   nis_thresh_count_ = 0;
 }
@@ -379,16 +377,18 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
  * Normalised Innovation Squared for checking noise parameter values,
  * @param {S} - measurement covariance matrix 
  * @param {z_diff} - difference between predicted and measured values
+ * @param {n_z} - Number of measured sensor parameters, lidar = 2, Radar = 3.
  */
 void UKF::NISState(MatrixXd &S, VectorXd &z_diff, const int &n_z) {
   
   update_count_ += 1;
   
-  if(n_z == 2) {
+  // compare error with the Chi Squared 0.050 distribution
+  if(n_z == 2) { // Lidar measurement check
     if(z_diff.transpose() * S.inverse() * z_diff > 5.991) {
       nis_thresh_count_ += 1;
     }
-  } else if(n_z == 3) {
+  } else if(n_z == 3) { // Radar measurement check
     if(z_diff.transpose() * S.inverse() * z_diff > 7.815) {
       nis_thresh_count_ += 1;
     }
@@ -396,8 +396,5 @@ void UKF::NISState(MatrixXd &S, VectorXd &z_diff, const int &n_z) {
   
   std::cout << "Chi Suared 0.05 percentatage = ";
   std::cout << (float(nis_thresh_count_) / float(update_count_)) * 100.0 << "%";
-  std::cout << std::endl;
-  
-  //nis_array_.push_back(z_diff.transpose() * S.inverse() * z_diff);
-  
+  std::cout << std::endl;  
 }
