@@ -37,7 +37,7 @@ For Mac
 sh install-mac.sh
 `
 
-3. ./ExtendedKF
+3. ./UnscentedKF
 
 
 If the above fails, install intall [uWebSocketIO](https://github.com/uWebSockets/uWebSockets) seperatly, then build and ran by doing the following from the project top directory.
